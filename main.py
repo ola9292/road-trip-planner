@@ -52,6 +52,16 @@ def get_location():
 
     return jsonify(locations_list), 200
 
+@app.route("/location/<int:id>/delete", methods=["GET", "POST"])
+def location_delete(id):
+    location = db.get_or_404(Location, id)
+
+    if request.method == "POST":
+        db.session.delete(location)
+        db.session.commit()
+        return {"message": "Location deleted", "id": id}
+
+
 class Location(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
