@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "vue-draggable-plus": "^0.6.0"
+  }
+}
