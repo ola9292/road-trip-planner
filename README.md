@@ -5,7 +5,7 @@ Road trip planner is an app you can use to add cities(England) you would like to
 # Motivation
 I love going on vacation and got this project inspiration from dev projects, I saw this as an opputunity to pratice with using leaflet js so i took it.
 # Screenshot
-![image alt](https://github.com/ola9292/web-uptime-monitor/blob/a872c344aeb4b3f0275f75f96883945b5c7cbf7f/Screenshot%202025-09-05%20at%209.32.55%20pm.png)
+![image alt](https://github.com/ola9292/road-trip-planner/blob/c9fb6b5038b54ad2c60b6705b5cd2502f567cf97/Screenshot%202025-09-13%20at%2011.09.29%20pm.png)
 # Framework and Tools
 Vue js, Flask, Ninja Api, Leaflet js, Bootstrap
 # How to use
