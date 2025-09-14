@@ -32,7 +32,7 @@ def save_location():
         )
         db.session.add(location)
         db.session.commit()
-        return redirect(url_for("home"))
+        return {"message": "Location added", "id": location.id}
     else:
         print('nothing dey here ')
     return render_template('home.html')

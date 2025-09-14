@@ -22,7 +22,7 @@
             <div class="input-group mb-3">
                 <input type="text" class="form-control" placeholder="Search cities in England" aria-label="Recipient’s username"
                     aria-describedby="button-addon2" v-model="query">
-                <button class="btn btn-outline-secondary" type="button" @click="getMarker">Go</button>
+                <button class="btn btn-outline-secondary" type="button" @click="setMarker">Go</button>
             </div>
             <div id="map"></div>
             <div v-if="length" class="alert alert-dark mt-2" role="alert">
@@ -54,7 +54,7 @@
                 return {
                     message: 'Hello Vue!',
                     map: null,
-                    marker: null,
+                    markers: [],
                     query:'',
                     cities:[],
                     loading:false,
@@ -66,8 +66,7 @@
             },
             delimiters: ['{','}'],
             methods: {
-                getMarker(){
-
+                setMarker(){
                         if(this.query != ""){
                             const url = `https://api.api-ninjas.com/v1/geocoding?city=${this.query}&country=England`
                             fetch(url, {
@@ -78,22 +77,22 @@
                             })
                             .then(response => response.json())
                             .then(data => {
-                                console.log(data)
+                                // console.log(data)
 
                                 const location = {
                                     "latitude" : data[0].latitude,
                                     "longitude": data[0].longitude,
                                     "name": data[0].name,
                                 }
-
+                                
                                 //add marker
-                                this.marker = L.marker([data[0].latitude, data[0].longitude])
-                                                .addTo(this.map)
+                                // this.marker = L.marker([data[0].latitude, data[0].longitude])
+                                //                 .addTo(this.map)
                                                 // .bindPopup(data[0].name)
                                                 // .openPopup();
 
 
-                                this.cities.push(location)
+                                // this.cities.push(location)
                                 this.query = ""
                                 //save to db
                                 fetch("/save-location", {
@@ -106,7 +105,9 @@
                                     .then(response => response.json())
                                     .then(result => {
                                         console.log("Saved in DB:", result)
-                                        
+
+                                        this.fetchLocations()
+                        
                                     })
                                     .catch(err => console.error("Error saving location:", err))
                             })
@@ -117,52 +118,45 @@
                 },
                 fetchLocations() {
                     this.loading = true
+
+                    // Clear existing markers before adding new ones
+                    if (this.markers && this.markers.length > 0) {
+                        this.markers.forEach(markerObj => {
+                            this.map.removeLayer(markerObj.marker)
+                        })
+                    }
+                    this.markers = [] // Reset markers array
+
                     fetch("/get-locations")
                         .then(res => res.json())
                         .then(data => {
-                            console.log(data) 
+                            // console.log(data) 
                             let bounds = []
 
                             data.forEach(loc => {
-                                const marker =  L.marker([loc.latitude, loc.longitude])
+                                const marker = L.marker([loc.latitude, loc.longitude])
                                     .addTo(this.map)
                                     .bindPopup(loc.name)
 
+                                // Store marker reference
+                                this.markers.push({
+                                    marker: marker,
+                                    location: loc,
+                                    latlng: L.latLng(loc.latitude, loc.longitude)
+                                })
 
-                                    //calculating distance and drawing polyline
-                                    marker.on('click', (e) => {
-                                    const { lat, lng } = e.latlng;
-                                    //if pointA is null, set pointA to crrent latlong
-                                    if (!this.pointA) {
-
-                                        this.pointA = e.latlng
-
-                                    } else if (!this.pointB) {//if pointB is null, set pointB to crrent latlong
-                                        this.pointB = e.latlng
-                                        this.polyline = L.polyline([this.pointA, this.pointB], {
-                                            color: "red"
-                                        }).addTo(this.map)
-                                        this.length = (this.map.distance(this.pointA, this.pointB) / 1000).toFixed(2)
-                                    } else {
-
-                                        if (this.polyline) {
-                                            this.map.removeLayer(this.polyline)
-                                            this.polyline = null
-                                            this.pointA = e.latlng
-                                            this.pointB = null
-                                        }
-
-                                    }
-                                });
+                                // Add click handler for polyline
+                                this.addMarkerClickHandler(marker)
 
                                 bounds.push([loc.latitude, loc.longitude])
                             })
                             //setting map to view
-                             if (bounds.length > 0) {
+                            if (bounds.length > 0) {
                                 this.map.fitBounds(bounds)
-                                }
+                            }
                             this.loading = false
                             this.cities = data
+
                         })
                         .catch(err => console.error("Error fetching locations:", err))
                 },
@@ -174,10 +168,32 @@
                         .then(result => {
                             console.log("deleted from DB:", result)
                             this.cities = this.cities.filter(city => city.id !== id)
+                            this.fetchLocations()
                         })
                         .catch(err => console.error("Error saving location:", err))
-                }
-
+                },
+                addMarkerClickHandler(marker) {
+                    marker.on('click', (e) => {
+                        const { lat, lng } = e.latlng;
+                        //if pointA is null, set pointA to current latlong
+                        if (!this.pointA) {
+                            this.pointA = e.latlng
+                        } else if (!this.pointB) {//if pointB is null, set pointB to current latlong
+                            this.pointB = e.latlng
+                            this.polyline = L.polyline([this.pointA, this.pointB], {
+                                color: "red"
+                            }).addTo(this.map)
+                            this.length = (this.map.distance(this.pointA, this.pointB) / 1000).toFixed(2)
+                        } else {
+                            if (this.polyline) {
+                                this.map.removeLayer(this.polyline)
+                                this.polyline = null
+                                this.pointA = e.latlng
+                                this.pointB = null
+                            }
+                        }
+                    });
+                },
                     
             },
             mounted() {
@@ -187,11 +203,8 @@
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 }).addTo(this.map);
-                this.fetchLocations()
-                
-            }
-
-            
+                this.fetchLocations() 
+            }   
         }).mount('#app')
     </script>
 </body>
