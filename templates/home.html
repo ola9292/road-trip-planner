@@ -68,6 +68,7 @@
             methods: {
                 setMarker(){
                         if(this.query != ""){
+                            const cityToStore = this.query
                             const url = `https://api.api-ninjas.com/v1/geocoding?city=${this.query}&country=England`
                             fetch(url, {
                                 headers: {
@@ -85,15 +86,6 @@
                                     "name": data[0].name,
                                 }
                                 
-                                //add marker
-                                // this.marker = L.marker([data[0].latitude, data[0].longitude])
-                                //                 .addTo(this.map)
-                                                // .bindPopup(data[0].name)
-                                                // .openPopup();
-
-
-                                // this.cities.push(location)
-                                this.query = ""
                                 //save to db
                                 fetch("/save-location", {
                                     method: "POST",
@@ -111,7 +103,11 @@
                                     })
                                     .catch(err => console.error("Error saving location:", err))
                             })
-                            .catch(error => console.error('Error:', error));
+                            .catch(error => {
+                                console.error('Error:', error)
+                                alert(`${cityToStore} is not a valid city in England`)
+                            });
+                            this.query = ""
                         }else{
                             alert('Enter a city in england')
                         }
